@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Hangman</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #00ff9d;
+      --secondary: #ff3c3c;
+      --bg-dark: #0e0e0e;
+      --bg-medium: #1a1a1a;
+      --bg-light: #333;
+      --text-light: #fff;
+      --text-dim: #aaa;
+    }
+    
+    * {
+      box-sizing: border-box;
+      font-family: 'Source Code Pro', monospace;
+    }
+    
+    body {
+      background: var(--bg-dark);
+      color: var(--text-light);
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    h1 {
+      color: var(--primary);
+      text-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+      margin-bottom: 5px;
+      font-size: 2.5rem;
+    }
+    
+    .subtitle {
+      color: var(--text-dim);
+      margin-bottom: 30px;
+      font-size: 0.9rem;
+    }
+    
+    #category {
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+      color: var(--text-dim);
+      display: flex;
+      gap: 15px;
+    }
+    
+    #category span {
+      color: var(--primary);
+      font-weight: bold;
+    }
+    
+    #gameArea {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      width: 100%;
+      max-width: 900px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+    
+    #wordDisplay {
+      font-size: 2.2rem;
+      letter-spacing: 10px;
+      margin: 30px 0;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: bold;
+    }
+    
+    #keyboard {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      max-width: 500px;
+      margin-top: 20px;
+    }
+    
+    #keyboard button {
+      margin: 0;
+      padding: 12px 0;
+      background: var(--bg-medium);
+      border: 2px solid #444;
+      color: var(--text-light);
+      font-size: 1.1rem;
+      cursor: pointer;
+      width: 45px;
+      border-radius: 6px;
+      transition: all 0.2s;
+      font-weight: bold;
+    }
+    
+    #keyboard button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    #keyboard button:disabled {
+      background: var(--bg-light);
+      color: #777;
+      cursor: not-allowed;
+      border-color: transparent;
+    }
+    
+    #keyboard button.correct {
+      background: #1a472a;
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    
+    #keyboard button.wrong {
+      background: #472a1a;
+      color: var(--secondary);
+      border-color: var(--secondary);
+    }
+    
+    #hangmanContainer {
+      position: relative;
+      width: 220px;
+      height: 270px;
+    }
+    
+    #hangmanCanvas {
+      background: var(--bg-medium);
+      border: 2px solid var(--primary);
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 255, 157, 0.1);
+    }
+    
+    #message {
+      font-size: 1.4rem;
+      margin: 20px 0;
+      color: var(--secondary);
+      min-height: 40px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #message.success {
+      color: var(--primary);
+    }
+    
+    #wrongLetters {
+      color: var(--secondary);
+      margin-top: 15px;
+      font-size: 1.1rem;
+      min-height: 25px;
+    }
+    
+    #wrongLetters span {
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    #playAgain, #hintButton {
+      padding: 12px 25px;
+      background: var(--primary);
+      color: #000;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    
+    #playAgain:hover, #hintButton:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 255, 157, 0.3);
+    }
+    
+    #playAgain:active, #hintButton:active {
+      transform: translateY(0);
+    }
+    
+    #playAgain { 
+      display: none; 
+      background: #0077ff;
+      color: white;
+    }
+    
+    #hintButton {
+      background: #9d00ff;
+      color: white;
+    }
+    
+    #hintButton:disabled {
+      background: #333;
+      color: #777;
+      cursor: not-allowed;
+    }
+    
+    #overlay {
+      position: fixed;
+      top: 0; 
+      left: 0;
+      width: 100%; 
+      height: 100%;
+      backdrop-filter: blur(5px);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      font-size: 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 1000;
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+    
+    #overlay h2 {
+      margin-bottom: 30px;
+      text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    }
+    
+    #overlay p {
+      font-size: 1.5rem;
+      margin-bottom: 40px;
+      max-width: 80%;
+    }
+    
+    .progress-container {
+      width: 80%;
+      max-width: 400px;
+      height: 10px;
+      background: var(--bg-medium);
+      border-radius: 5px;
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+    
+    #progressBar {
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+    
+    .shake {
+      animation: shake 0.4s;
+    }
+    
+    .pulse {
+      animation: pulse 1s infinite;
+    }
+    
+    .word-letter {
+      display: inline-block;
+      transition: all 0.3s;
+      position: relative;
+    }
+    
+    .word-letter.revealed {
+      color: var(--primary);
+      transform: translateY(-5px);
+    }
+    
+    .word-letter::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 2px;
+      background: var(--primary);
+      transition: width 0.3s;
+    }
+    
+    .word-letter.revealed::after {
+      width: 100%;
+    }
+    
+    .glitch {
+      position: relative;
+    }
+    
+    .glitch::before, .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-dark);
+    }
+    
+    .glitch::before {
+      left: 2px;
+      text-shadow: -2px 0 #ff00c1;
+      clip: rect(44px, 450px, 56px, 0);
+      animation: glitch-anim 5s infinite linear alternate-reverse;
+    }
+    
+    .glitch::after {
+      left: -2px;
+      text-shadow: -2px 0 #00fff9, 2px 2px #ff00c1;
+      clip: rect(44px, 450px, 56px, 0);
+      animation: glitch-anim2 5s infinite linear alternate-reverse;
+    }
+    
+    @keyframes glitch-anim {
+      0% { clip: rect(31px, 9999px, 94px, 0); }
+      10% { clip: rect(112px, 9999px, 76px, 0); }
+      20% { clip: rect(85px, 9999px, 77px, 0); }
+      30% { clip: rect(27px, 9999px, 97px, 0); }
+      40% { clip: rect(64px, 9999px, 98px, 0); }
+      50% { clip: rect(61px, 9999px, 85px, 0); }
+      60% { clip: rect(99px, 9999px, 114px, 0); }
+      70% { clip: rect(34px, 9999px, 115px, 0); }
+      80% { clip: rect(98px, 9999px, 129px, 0); }
+      90% { clip: rect(43px, 9999px, 96px, 0); }
+      100% { clip: rect(82px, 9999px, 64px, 0); }
+    }
+    
+    @keyframes glitch-anim2 {
+      0% { clip: rect(65px, 9999px, 119px, 0); }
+      10% { clip: rect(66px, 9999px, 115px, 0); }
+      20% { clip: rect(117px, 9999px, 114px, 0); }
+      30% { clip: rect(40px, 9999px, 96px, 0); }
+      40% { clip: rect(75px, 9999px, 109px, 0); }
+      50% { clip: rect(58px, 9999px, 98px, 0); }
+      60% { clip: rect(14px, 9999px, 108px, 0); }
+      70% { clip: rect(73px, 9999px, 103px, 0); }
+      80% { clip: rect(21px, 9999px, 125px, 0); }
+      90% { clip: rect(58px, 9999px, 109px, 0); }
+      100% { clip: rect(88px, 9999px, 113px, 0); }
+    }
+    
+    @media (max-width: 768px) {
+      #gameArea {
+        gap: 30px;
+      }
+      
+      #wordDisplay {
+        font-size: 1.8rem;
+        letter-spacing: 6px;
+      }
+      
+      #keyboard button {
+        width: 35px;
+        padding: 10px 0;
+        font-size: 1rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1 class="glitch" data-text="CYBER HANGMAN">CYBER HANGMAN</h1>
+  <div class="subtitle">Guess the word before the system fails...</div>
+  
+  <div id="category">
+    <div>Category: <span id="categoryName"></span></div>
+    <div>Level: <span id="level"></span></div>
+  </div>
+  
+  <div id="gameArea">
+    <div id="hangmanContainer">
+      <canvas id="hangmanCanvas" width="220" height="270"></canvas>
+      <div id="wrongLetters">Wrong attempts: <span id="wrongList"></span></div>
+    </div>
+    
+    <div>
+      <div id="wordDisplay"></div>
+      <div id="keyboard"></div>
+    </div>
+  </div>
+  
+  <div id="message"></div>
+  
+  <div class="button-group">
+    <button id="hintButton" onclick="useHint()">Use Hint (<span id="hintCount">0</span>)</button>
+    <button id="playAgain" onclick="nextLevel()">Next Level</button>
+  </div>
+  
+  <div id="overlay">
+    <h2 id="overlayTitle">ACCESS DENIED</h2>
+    <p id="overlayMessage">System failure detected</p>
+    <div class="progress-container">
+      <div id="progressBar"></div>
+    </div>
+  </div>
+
+  <script>
+    const levels = [
+      { 
+        category: 'Programming Languages', 
+        words: ['python', 'java', 'kotlin', 'swift', 'ruby', 'javascript', 'typescript', 'golang'],
+        description: 'Common programming languages used in development'
+      },
+      { 
+        category: 'Cybersecurity', 
+        words: ['firewall', 'malware', 'phishing', 'exploit', 'breach', 'ransomware', 'keylogger', 'backdoor'],
+        description: 'Terms related to digital security and threats'
+      },
+      { 
+        category: 'Internet Culture', 
+        words: ['rizz', 'meme', 'cringe', 'sus', 'vibe', 'slay', 'based', 'simp'],
+        description: 'Popular slang and terms from online communities'
+      },
+      { 
+        category: 'OSINT Tools', 
+        words: ['shodan', 'maltego', 'reconng', 'theharvester', 'spiderfoot', 'metagoofil', 'creepy'],
+        description: 'Tools used in Open Source Intelligence gathering'
+      },
+      { 
+        category: 'Linux Commands', 
+        words: ['grep', 'awk', 'sed', 'chmod', 'sudo', 'find', 'ssh', 'tar'],
+        description: 'Common commands used in Linux terminal'
+      }
+    ];
+
+    let levelIndex = 0;
+    let chosenWord = '';
+    let guessedLetters = [];
+    let wrongGuesses = 0;
+    let hintCount = 0;
+    let gameActive = true;
+
+    const canvas = document.getElementById('hangmanCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+
+    // Initialize the game
+    function init() {
+      // Add keyboard event listener
+      document.addEventListener('keydown', handleKeyPress);
+      
+      // Start the first level
+      startGame();
+    }
+
+    function updateHintDisplay() {
+      document.getElementById('hintCount').innerText = hintCount;
+      document.getElementById('hintButton').disabled = hintCount <= 0;
+    }
+
+    function useHint() {
+      if (!gameActive || hintCount <= 0) return;
+      
+      const unguessed = chosenWord.split('').filter(l => !guessedLetters.includes(l));
+      if (unguessed.length === 0) return;
+      
+      const hintLetter = unguessed[Math.floor(Math.random() * unguessed.length)];
+      handleGuess(hintLetter);
+      hintCount--;
+      updateHintDisplay();
+      
+      // Show hint animation
+      const letterElements = document.querySelectorAll('.word-letter');
+      letterElements.forEach(el => {
+        if (el.textContent === hintLetter) {
+          el.classList.add('revealed');
+        }
+      });
+    }
+
+    function drawHangman(stage) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#00ff9d';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      // Draw gallows
+      ctx.beginPath(); 
+      ctx.moveTo(20, 250); 
+      ctx.lineTo(60, 250); 
+      ctx.lineTo(40, 230); 
+      ctx.lineTo(20, 250); 
+      ctx.stroke();
+      
+      ctx.beginPath(); 
+      ctx.moveTo(40, 230); 
+      ctx.lineTo(40, 30); 
+      ctx.lineTo(140, 30); 
+      ctx.lineTo(140, 50); 
+      ctx.stroke();
+      
+      // Draw hangman based on wrong guesses
+      if (stage > 0) { // Head
+        ctx.beginPath(); 
+        ctx.arc(140, 70, 20, 0, Math.PI * 2); 
+        ctx.stroke();
+      }
+      if (stage > 1) { // Body
+        ctx.beginPath(); 
+        ctx.moveTo(140, 90); 
+        ctx.lineTo(140, 150); 
+        ctx.stroke();
+      }
+      if (stage > 2) { // Left arm
+        ctx.beginPath(); 
+        ctx.moveTo(140, 110); 
+        ctx.lineTo(110, 130); 
+        ctx.stroke();
+      }
+      if (stage > 3) { // Right arm
+        ctx.beginPath(); 
+        ctx.moveTo(140, 110); 
+        ctx.lineTo(170, 130); 
+        ctx.stroke();
+      }
+      if (stage > 4) { // Left leg
+        ctx.beginPath(); 
+        ctx.moveTo(140, 150); 
+        ctx.lineTo(110, 190); 
+        ctx.stroke();
+      }
+      if (stage > 5) { // Right leg
+        ctx.beginPath(); 
+        ctx.moveTo(140, 150); 
+        ctx.lineTo(170, 190); 
+        ctx.stroke();
+        
+        // Draw sad face when fully hanged
+        ctx.beginPath();
+        ctx.arc(135, 65, 3, 0, Math.PI); // Left eye (sad)
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(145, 65, 3, 0, Math.PI); // Right eye (sad)
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(140, 75, 8, 0.1 * Math.PI, 0.9 * Math.PI); // Frown
+        ctx.stroke();
+      } else if (stage > 0) {
+        // Draw neutral face
+        ctx.beginPath();
+        ctx.arc(135, 65, 3, 0, Math.PI * 2); // Left eye
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(145, 65, 3, 0, Math.PI * 2); // Right eye
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(140, 75, 6, 0, Math.PI); // Mouth
+        ctx.stroke();
+      }
+    }
+
+    function startGame() {
+      gameActive = true;
+      const level = levels[levelIndex];
+      chosenWord = level.words[Math.floor(Math.random() * level.words.length)];
+      guessedLetters = [];
+      wrongGuesses = 0;
+      
+      document.getElementById('categoryName').innerText = level.category;
+      document.getElementById('level').innerText = levelIndex + 1;
+      document.getElementById('message').innerText = '';
+      document.getElementById('message').className = '';
+      document.getElementById('playAgain').style.display = 'none';
+      
+      drawHangman(wrongGuesses);
+      renderWord();
+      renderKeyboard();
+      updateHintDisplay();
+      document.getElementById('wrongList').innerText = '';
+      
+      // Reset canvas style
+      canvas.style.background = '';
+      canvas.style.borderColor = 'var(--primary)';
+    }
+
+    function renderWord() {
+      const wordDisplay = document.getElementById('wordDisplay');
+      wordDisplay.innerHTML = '';
+      
+      chosenWord.split('').forEach(letter => {
+        const letterSpan = document.createElement('span');
+        letterSpan.className = 'word-letter';
+        letterSpan.textContent = guessedLetters.includes(letter) ? letter : '_';
+        if (guessedLetters.includes(letter)) {
+          letterSpan.classList.add('revealed');
+        }
+        wordDisplay.appendChild(letterSpan);
+        
+        // Add space between letters
+        wordDisplay.appendChild(document.createTextNode(' '));
+      });
+    }
+
+    function renderKeyboard() {
+      const keyboard = document.getElementById('keyboard');
+      keyboard.innerHTML = '';
+      
+      // Split keyboard into two rows for better layout
+      const firstRow = 'qwertyuiop'.split('');
+      const secondRow = 'asdfghjkl'.split('');
+      const thirdRow = 'zxcvbnm'.split('');
+      
+      const createRow = (letters) => {
+        const rowDiv = document.createElement('div');
+        rowDiv.style.display = 'flex';
+        rowDiv.style.justifyContent = 'center';
+        rowDiv.style.gap = '8px';
+        rowDiv.style.marginBottom = '8px';
+        
+        letters.forEach(letter => {
+          const btn = document.createElement('button');
+          btn.innerText = letter;
+          btn.disabled = guessedLetters.includes(letter);
+          
+          if (guessedLetters.includes(letter)) {
+            btn.className = chosenWord.includes(letter) ? 'correct' : 'wrong';
+          }
+          
+          btn.onclick = () => handleGuess(letter);
+          rowDiv.appendChild(btn);
+        });
+        
+        keyboard.appendChild(rowDiv);
+      };
+      
+      createRow(firstRow);
+      createRow(secondRow);
+      createRow(thirdRow);
+    }
+
+    function handleKeyPress(e) {
+      if (!gameActive) return;
+      
+      const key = e.key.toLowerCase();
+      if (/^[a-z]$/.test(key) && !guessedLetters.includes(key)) {
+        handleGuess(key);
+      }
+    }
+
+    function handleGuess(letter) {
+      if (!gameActive || guessedLetters.includes(letter)) return;
+      
+      guessedLetters.push(letter);
+      const isCorrect = chosenWord.includes(letter);
+      
+      // Update keyboard button
+      const buttons = document.querySelectorAll('#keyboard button');
+      buttons.forEach(btn => {
+        if (btn.textContent === letter) {
+          btn.disabled = true;
+          btn.className = isCorrect ? 'correct' : 'wrong';
+        }
+      });
+      
+      if (!isCorrect) {
+        wrongGuesses++;
+        drawHangman(wrongGuesses);
+        document.getElementById('hangmanContainer').classList.add('shake');
+        setTimeout(() => {
+          document.getElementById('hangmanContainer').classList.remove('shake');
+        }, 400);
+        
+        updateWrongLetters();
+      } else {
+        // Animate the revealed letters
+        const letterElements = document.querySelectorAll('.word-letter');
+        letterElements.forEach((el, index) => {
+          if (chosenWord[index] === letter) {
+            setTimeout(() => {
+              el.classList.add('revealed');
+            }, 100 * index);
+          }
+        });
+      }
+      
+      renderWord();
+      checkGameStatus();
+    }
+
+    function updateWrongLetters() {
+      const wrongs = guessedLetters.filter(l => !chosenWord.includes(l));
+      document.getElementById('wrongList').innerText = wrongs.join(', ');
+    }
+
+    function checkGameStatus() {
+      const isWin = chosenWord.split('').every(l => guessedLetters.includes(l));
+      
+      if (isWin) {
+        gameActive = false;
+        const message = document.getElementById('message');
+        message.innerText = `ACCESS GRANTED! The word was: ${chosenWord.toUpperCase()}`;
+        message.classList.add('success');
+        
+        canvas.style.borderColor = '#00ff9d';
+        canvas.style.boxShadow = '0 0 20px rgba(0, 255, 157, 0.5)';
+        
+        document.getElementById('playAgain').style.display = 'block';
+        hintCount++;
+        updateHintDisplay();
+        
+        // Confetti effect
+        createConfetti();
+      } else if (wrongGuesses >= 6) {
+        gameActive = false;
+        const message = document.getElementById('message');
+        message.innerText = `SYSTEM FAILURE! The word was: ${chosenWord.toUpperCase()}`;
+        
+        canvas.style.borderColor = 'var(--secondary)';
+        canvas.style.boxShadow = '0 0 20px rgba(255, 60, 60, 0.5)';
+        
+        showOverlay(false);
+      }
+    }
+
+    function showOverlay(isWin) {
+      const overlay = document.getElementById('overlay');
+      const overlayTitle = document.getElementById('overlayTitle');
+      const overlayMessage = document.getElementById('overlayMessage');
+      const progressBar = document.getElementById('progressBar');
+      
+      if (isWin) {
+        overlayTitle.innerText = 'ACCESS GRANTED';
+        overlayTitle.style.color = 'var(--primary)';
+        overlayMessage.innerText = levels[levelIndex].description;
+      } else {
+        overlayTitle.innerText = 'ACCESS DENIED';
+        overlayTitle.style.color = 'var(--secondary)';
+        overlayMessage.innerText = 'System failure detected';
+      }
+      
+      overlay.style.display = 'flex';
+      progressBar.style.width = '0%';
+      
+      // Animate progress bar
+      setTimeout(() => {
+        progressBar.style.width = '100%';
+      }, 50);
+      
+      // Hide overlay and restart after delay
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        if (!isWin) {
+          startGame();
+        }
+      }, 2500);
+    }
+
+    function nextLevel() {
+      levelIndex = (levelIndex + 1) % levels.length;
+      showOverlay(true);
+      setTimeout(startGame, 2500);
+    }
+
+    function createConfetti() {
+      const colors = ['#00ff9d', '#ff3c3c', '#9d00ff', '#0077ff', '#ffcc00'];
+      
+      for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.style.position = 'fixed';
+        confetti.style.width = '8px';
+        confetti.style.height = '8px';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.borderRadius = '50%';
+        confetti.style.left = `${Math.random() * 100}vw`;
+        confetti.style.top = '-10px';
+        confetti.style.zIndex = '999';
+        confetti.style.transform = 'rotate(0deg)';
+        confetti.style.opacity = '0.8';
+        
+        document.body.appendChild(confetti);
+        
+        const animation = confetti.animate([
+          { top: '-10px', transform: 'rotate(0deg)', opacity: 0.8 },
+          { top: `${Math.random() * 100 + 50}vh`, transform: 'rotate(360deg)', opacity: 0 }
+        ], {
+          duration: 2000 + Math.random() * 3000,
+          easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)',
+          delay: Math.random() * 1000
+        });
+        
+        animation.onfinish = () => {
+          confetti.remove();
+        };
+      }
+    }
+
+    // Initialize the game when the page loads
+    window.onload = init;
+  </script>
+</body>
+</html>
